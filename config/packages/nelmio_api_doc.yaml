@@ -1,0 +1,8 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: My API
+            description: This is my API documentation
+            version: 1.0.0
+    areas:
+        path_patterns: []

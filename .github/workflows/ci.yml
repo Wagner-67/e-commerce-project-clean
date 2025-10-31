@@ -1,0 +1,95 @@
+name: Symfony CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+
+    runs-on: ubuntu-latest
+
+    services:
+      db:
+        image: mariadb:10.4
+        ports:
+          - 3306:3306
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: symfony
+          MYSQL_USER: symfony
+          MYSQL_PASSWORD: symfony
+        options: >-
+          --health-cmd "mysqladmin ping --silent"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 3
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.4'
+        extensions: mbstring, intl, pdo_mysql, xml, ctype, iconv, curl, zip
+        coverage: none
+
+    - name: Create test security configuration
+      run: |
+        mkdir -p config/packages/test
+        cat > config/packages/test/security.yaml << 'EOF'
+        when@test:
+            security:
+                password_hashers:
+                    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                        algorithm: argon2id
+                        time_cost: 3
+                        memory_cost: 65536
+        EOF
+
+    - name: Copy .env.example to .env and configure for CI
+      run: |
+        cp .env.example .env
+        sed -i 's/APP_ENV=dev/APP_ENV=test/' .env
+        sed -i 's/APP_SECRET=CHANGE_ME/APP_SECRET=ci_test_secret_$(openssl rand -base64 32)/' .env
+        sed -i 's|MAILER_DSN=.*|MAILER_DSN=null://null|' .env
+        sed -i 's|APP_TIMEZONE=.*|APP_TIMEZONE=UTC|' .env
+        echo 'DATABASE_URL="mysql://symfony:symfony@127.0.0.1:3306/symfony_test"' >> .env
+
+    - name: Install Composer dependencies
+      run: composer install --prefer-dist --no-interaction --no-scripts
+
+    - name: Wait for database
+      run: |
+        for i in {1..10}; do
+          if mysql -h 127.0.0.1 -P 3306 -u root -proot -e 'SELECT 1' > /dev/null 2>&1; then
+            echo "Database is ready!"
+            break
+          fi
+          echo "Waiting for database... ($i/10)"
+          sleep 5
+        done
+
+    - name: Create and setup test database
+      run: |
+        mysql -h 127.0.0.1 -P 3306 -u root -proot -e "CREATE DATABASE IF NOT EXISTS symfony_test_test;"
+        mysql -h 127.0.0.1 -P 3306 -u root -proot -e "GRANT ALL ON symfony_test_test.* TO 'symfony'@'%';"
+        mysql -h 127.0.0.1 -P 3306 -u root -proot -e "FLUSH PRIVILEGES;"
+
+    - name: Run Symfony commands
+      run: |
+        php bin/console doctrine:schema:drop --force --no-interaction
+        php bin/console doctrine:schema:create --no-interaction
+        php bin/console cache:clear --no-interaction
+
+    - name: Run Admin Journey Tests
+      run: php bin/phpunit --group smoke --filter testAdminJourney
+
+    - name: Run Customer Journey Tests  
+      run: php bin/phpunit --group smoke --filter testCustomerJourney
+
+    - name: Run PHPUnit tests
+      run: php bin/phpunit
