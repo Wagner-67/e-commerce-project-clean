@@ -1,6 +1,6 @@
 # E-Commerce Backend POC - Symfony 7.4.x
 
-Ein Proof of Concept für ein E-Commerce Backend basierend auf Symfony 7.4.x mit Docker-Containerisierung und CI/CD-Pipeline.
+Ein Proof of Concept für ein E-Commerce Backend auf Basis von Symfony 7.4.x, umgesetzt mit Docker-Containerisierung und einer CI/CD-Pipeline. Das Projekt demonstriert einen einfachen Anwendungsfluss anhand einer Customer Journey, die als Grundlage für Tests und Zukünftigen Projekten dient und leicht erweitert werden kann.
 
 ---
 
