@@ -332,58 +332,5 @@ final class OrderController extends AbstractController
             'message' => 'Payment deleted successfully.',
             'id' => $payment->getId(),
         ]);
-
     }
-    #[Route('/auth/checkout-pay', name: 'auth_checkout_pay', methods: ['POST'])]
-    #[OA\RequestBody(
-    content: new OA\JsonContent(
-        example: ["orderId" => 1]
-    )
-)]
-#[OA\Response(
-    response: 200,
-    description: "OK",
-    content: new OA\JsonContent(
-        example: ["status" => "success", "message" => "Payment successful", "orderId" => 1]
-    )
-)]
-    public function checkoutPay(
-    Request $request,
-    EntityManagerInterface $em
-): JsonResponse {
-
-    $user = $this->getUser();
-    if (!$user instanceof User) {
-        return new JsonResponse(['message' => 'User is not authenticated'], 401);
-    }
-
-    $data = json_decode($request->getContent(), true);
-    $orderId = $data['orderId'] ?? null;
-
-    if (!$orderId) {
-        return new JsonResponse(['message' => 'Order ID is required'], 400);
-    }
-
-    $order = $em->getRepository(Order::class)->find($orderId);
-
-    if (!$order || $order->getUser() !== $user) {
-        return new JsonResponse(['message' => 'Order not found or access denied'], 404);
-    }
-
-    if ($order->getStatus() !== 'setup') {
-        return new JsonResponse(['message' => 'Order is already paid or cannot be processed'], 400);
-    }
-
-    $order->setStatus('paid');
-
-    $em->flush();
-
-    return new JsonResponse([
-        'status' => 'success',
-        'message' => 'Payment successful',
-        'orderId' => $order->getId(),
-        'orderStatus' => $order->getStatus()
-    ]);
-}
-
 }

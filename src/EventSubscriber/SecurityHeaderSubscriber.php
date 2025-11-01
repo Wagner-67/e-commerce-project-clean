@@ -16,6 +16,12 @@ class SecurityHeaderSubscriber implements EventSubscriberInterface
     }
     public function onKernelResponse(ResponseEvent $event): void
     {
+
+        if (!$event->isMainRequest()) {
+            return;
+       }
+
+
         $response = $event->getResponse();
 
         $response->headers->set('X-Frame-Options', 'DENY');
@@ -26,5 +32,7 @@ class SecurityHeaderSubscriber implements EventSubscriberInterface
         $response->headers->set('Cross-Origin-Resource-Policy', 'same-origin');
         $response->headers->set('Content-Security-Policy', "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'");
         $response->headers->set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+        $response->headers->set('Permissions-Policy', "camera=(), microphone=(), geolocation=()");
+
     }
 }
