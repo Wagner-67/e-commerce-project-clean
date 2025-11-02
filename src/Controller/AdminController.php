@@ -77,7 +77,7 @@ final class AdminController extends AbstractController
         $data = json_decode($request->getContent(), true);
         $inputPassword = $data['password'] ?? null;
 
-        $adminPassword = 'passwordUmDenUserZumAdminZuMachen';
+        $adminPassword = $_ENV['ADMIN_TEST_PASSWORD'];
 
         if (!$inputPassword || $inputPassword !== $adminPassword) {
             return new JsonResponse(['error' => 'Wrong Credentials'], 403);
