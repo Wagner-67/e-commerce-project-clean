@@ -58,6 +58,8 @@ jobs:
         sed -i 's|MAILER_DSN=.*|MAILER_DSN=null://null|' .env
         sed -i 's|APP_TIMEZONE=.*|APP_TIMEZONE=UTC|' .env
         echo 'DATABASE_URL="mysql://symfony:symfony@127.0.0.1:3306/symfony_test"' >> .env
+        echo "ADMIN_TEST_PASSWORD=${{ secrets.ADMIN_TEST_PASSWORD }}" >> .env
+
 
     - name: Install Composer dependencies
       run: composer install --prefer-dist --no-interaction --no-scripts
